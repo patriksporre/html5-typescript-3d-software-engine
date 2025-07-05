@@ -1,0 +1,16 @@
+{
+    "compilerOptions": {
+      "target": "es6",
+      "module": "esnext",
+      "strict": true,
+      "esModuleInterop": true,
+      "skipLibCheck": true,
+      "forceConsistentCasingInFileNames": true,
+      "removeComments": true,
+      "outDir": "./build",
+      "rootDir": "./source",
+    },
+    "include": [
+      "source/**/*.ts"
+    ]
+  }
