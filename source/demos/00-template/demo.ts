@@ -32,8 +32,8 @@ export function initialize(blitter: Blitter) {
  * In this minimal example, it simply plots a single white pixel in the centre.
  *
  * @param blitter - Rendering abstraction for plotting pixels
- * @param elapsedTime - Total time (in ms) since the engine started
- * @param deltaTime - Time (in ms) since the last frame
+ * @param elapsedTime - Total time in seconds since the engine started
+ * @param deltaTime - Time in seconds since the last frame
  */
 export function render(blitter: Blitter, elapsedTime: number, deltaTime: number) {
     // Plot a white pixel in the middle of the canvas
