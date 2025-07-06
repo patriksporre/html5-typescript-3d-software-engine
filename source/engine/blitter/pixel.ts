@@ -24,7 +24,7 @@ import { Color4 } from "../color/color4.js";
  * @param clip - Whether to apply clipping (default: false)
  * @param backbuffer - The 32-bit backbuffer to write to
  */
-export function setPixel(blitter: Blitter, x: number, y: number, color: Color4, clip: boolean = false, backbuffer: Uint32Array): void {
+export function setPixel(blitter: Blitter, x: number, y: number, color: Color4, clip: boolean, backbuffer: Uint32Array): void {
     if (clip) {
         if (
             x < blitter.clipping.minX || x >= blitter.clipping.maxX ||
@@ -46,7 +46,7 @@ export function setPixel(blitter: Blitter, x: number, y: number, color: Color4, 
  * @param backbuffer - The 32-bit backbuffer to read from
  * @returns Color4 representing the pixel's color, or null if clipped
  */
-export function getPixel(blitter: Blitter, x: number, y: number, clip: boolean = false, backbuffer: Uint32Array): Color4 | null {
+export function getPixel(blitter: Blitter, x: number, y: number, clip: boolean, backbuffer: Uint32Array): Color4 | null {
     if (clip) {
         if (
             x < blitter.clipping.minX || x >= blitter.clipping.maxX ||

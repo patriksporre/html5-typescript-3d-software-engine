@@ -24,6 +24,8 @@ import { Clipping } from "./blitter/clipping.js";
 import { Color4 } from "./color/color4.js";
 
 import { getPixel, setPixel } from './blitter/pixel.js';
+import { drawLineDDA } from "./blitter/line.js";
+import { Point2D } from "./geometry/point2d.js";
 
 interface CanvasParameters {
     width: number,
@@ -156,5 +158,21 @@ export class Blitter {
      */
     public getPixel(x: number, y: number, clip: boolean = false, backbuffer: Uint32Array = this.backbuffer32): Color4 | null {
         return getPixel(this, Math.floor(x), Math.floor(y), clip, backbuffer);
+    }
+
+    /**
+     * Draws a line between two points using the DDA (Digital Differential Analyzer) algorithm.
+     * 
+     * This method wraps the global drawLineDDA() function and passes the current Blitter instance.
+     * It supports optional clipping and backbuffer override, defaulting to the Blitter's internal backbuffer.
+     * 
+     * @param a - Start point (Point2D)
+     * @param b - End point (Point2D)
+     * @param color - Line colour (defaults to Color4.black)
+     * @param clip - Whether to apply clipping using this Blitter's clip region (default: false)
+     * @param backbuffer - Optional target buffer (default: this.backbuffer32)
+     */
+    public drawLineDDA(a: Point2D, b: Point2D, color: Color4, clip: boolean = false, backbuffer: Uint32Array = this.backbuffer32) : void {
+        return drawLineDDA(this, a, b, color, clip, backbuffer);
     }
 }
