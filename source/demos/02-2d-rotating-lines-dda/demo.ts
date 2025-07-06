@@ -5,7 +5,7 @@
  * License: MIT
  * 
  * Description:
- *   Demo 01-2d-rotating-points – demonstrates 2D transformation using rotation, scaling, and translation.
+ *   Demo 02-2d-rotating-lines-dda – demonstrates 2D transformation using rotation, scaling, and translation.
  *   A square of four points is defined in local space around the origin (0, 0).
  *   Each frame:
  *     - The square is scaled using a time-based sine wave
