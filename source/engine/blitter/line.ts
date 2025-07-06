@@ -25,6 +25,7 @@
  */
 import { Blitter } from "../blitter.js";
 import { Color4 } from "../color/color4.js";
+import { clipLineLiangBarsky } from "../geometry/clip.js";
 import { Point2D } from "../geometry/point2d.js";
 
 /**
@@ -41,6 +42,16 @@ import { Point2D } from "../geometry/point2d.js";
  * @param backbuffer - Optional backbuffer to draw into (defaults to blitter's internal buffer)
  */
 export function drawLineBresenham(blitter: Blitter, a: Point2D, b: Point2D, color: Color4, clip: boolean, backbuffer: Uint32Array): void {
+    if (clip) {
+        const clipped: { a: Point2D; b: Point2D } | null = clipLineLiangBarsky(a, b, blitter.clipping);
+
+        // Check if line is completelly outside
+        if (!clipped) return;
+
+        a = clipped.a;
+        b = clipped.b;
+    }
+
     // Floor input coordinates to ensure pixel alignment
     let x0: number = Math.floor(a.x);
     let y0: number = Math.floor(a.y);
@@ -60,7 +71,7 @@ export function drawLineBresenham(blitter: Blitter, a: Point2D, b: Point2D, colo
 
     // Main loop: continue plotting until end point is reached
     while (true) {
-        blitter.setPixel(x0, y0, color, clip, backbuffer);
+        blitter.setPixel(x0, y0, color, false, backbuffer);
 
         // Exit condition: end of line reached
         if (x0 === x1 && y0 === y1) break;
@@ -101,6 +112,16 @@ export function drawLineBresenham(blitter: Blitter, a: Point2D, b: Point2D, colo
  * @param backbuffer - Optional backbuffer to draw into (defaults to blitter's internal buffer)
  */
 export function drawLineDDA(blitter: Blitter, a: Point2D, b: Point2D, color: Color4, clip: boolean, backbuffer: Uint32Array): void {
+    if (clip) {
+        const clipped: { a: Point2D; b: Point2D } | null = clipLineLiangBarsky(a, b, blitter.clipping);
+
+        // Check if line is completelly outside
+        if (!clipped) return;
+
+        a = clipped.a;
+        b = clipped.b;
+    }
+
     // Calculate differences in x and y
     const deltaX: number = b.x - a.x;
     const deltaY: number = b.y - a.y;
@@ -124,7 +145,7 @@ export function drawLineDDA(blitter: Blitter, a: Point2D, b: Point2D, color: Col
 
     // Incrementally plot each step along the line
     for (let i: number = 0; i <= steps; i++) {
-        blitter.setPixel(x, y, color, clip, backbuffer);
+        blitter.setPixel(x, y, color, false, backbuffer);
         x += stepX;
         y += stepY;
     }
