@@ -24,7 +24,7 @@ import { Clipping } from "./blitter/clipping.js";
 import { Color4 } from "./color/color4.js";
 
 import { getPixel, setPixel } from './blitter/pixel.js';
-import { drawLineDDA } from "./blitter/line.js";
+import { drawLineBresenham, drawLineDDA } from "./blitter/line.js";
 import { Point2D } from "./geometry/point2d.js";
 
 interface CanvasParameters {
@@ -158,6 +158,24 @@ export class Blitter {
      */
     public getPixel(x: number, y: number, clip: boolean = false, backbuffer: Uint32Array = this.backbuffer32): Color4 | null {
         return getPixel(this, Math.floor(x), Math.floor(y), clip, backbuffer);
+    }
+
+    /**
+     * Draws a line between two points using the Bresenham line algorithm.
+     * 
+     * Wrapper around drawLineBresenham() that binds this blitter instance.
+     * This method avoids floating-point math and produces pixel-precise results.
+     * 
+     * Suitable for sharp rasterisation of 1px-wide lines and highly efficient on modern CPUs.
+     *
+     * @param a - Start point (Point2D)
+     * @param b - End point (Point2D)
+     * @param color - Colour to draw the line
+     * @param clip - Whether to apply clipping using the current clip region
+     * @param backbuffer - Optional backbuffer override
+     */
+    public drawLineBresenham(a: Point2D, b: Point2D, color: Color4, clip: boolean = false, backbuffer: Uint32Array = this.backbuffer32) : void {
+        return drawLineBresenham(this, a, b, color, clip, backbuffer);
     }
 
     /**

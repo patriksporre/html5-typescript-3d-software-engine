@@ -3,25 +3,84 @@
  * File: line.ts
  * Author: Patrik Sporre
  * License: MIT
- * 
+ *
  * Description:
- *   Provides DDA (Digital Differential Analyzer) line rasterisation.
- *   This implementation draws a line between two points with sub-pixel precision
- *   using floating-point interpolation.
- * 
- *   The DDA algorithm is simple, efficient, and useful for educational purposes.
- *   It operates by stepping along the axis of greatest length (either X or Y),
- *   computing small incremental steps in both directions.
- * 
- *   This method provides a baseline for later improvements such as:
- *     - Integer-based Bresenham algorithm
+ *   Provides line rasterisation methods using both the DDA (Digital Differential Analyzer)
+ *   and Bresenham algorithms.
+ *
+ *   DDA:
+ *     - Uses floating-point interpolation
+ *     - Steps from point A to B using sub-pixel increments
+ *     - Simple and educational; ideal for soft logic and prototyping
+ *
+ *   Bresenham:
+ *     - Uses integer-only arithmetic
+ *     - More efficient and precise for exact pixel rendering
+ *     - Handles all octants and line directions
+ *
+ *   These implementations serve as a foundation for future features such as:
  *     - Line clipping (Liang-Barsky, Cohen-Sutherland)
- *     - Shading, interpolation, and triangle rasterisation
+ *     - Triangle rasterisation
+ *     - Polygon filling and shading techniques
  */
-
 import { Blitter } from "../blitter.js";
 import { Color4 } from "../color/color4.js";
 import { Point2D } from "../geometry/point2d.js";
+
+/**
+ * Draws a line between two points using the Bresenham line algorithm.
+ * 
+ * This version handles all octants and directions using integer logic.
+ * Compared to DDA, it avoids floating-point operations, making it faster and pixel-exact.
+ * 
+ * @param blitter - The drawing surface
+ * @param a - Start point (Point2D)
+ * @param b - End point (Point2D)
+ * @param color - Colour to draw the line (defaults to Color4.black)
+ * @param clip - Whether to apply clipping using the blitter's clip region
+ * @param backbuffer - Optional backbuffer to draw into (defaults to blitter's internal buffer)
+ */
+export function drawLineBresenham(blitter: Blitter, a: Point2D, b: Point2D, color: Color4, clip: boolean, backbuffer: Uint32Array): void {
+    // Floor input coordinates to ensure pixel alignment
+    let x0: number = Math.floor(a.x);
+    let y0: number = Math.floor(a.y);
+    let x1: number = Math.floor(b.x);
+    let y1: number = Math.floor(b.y);
+
+    // Calculate absolute distances
+    const deltaX: number = Math.abs(x1 - x0);
+    const deltaY: number = Math.abs(y1 - y0);
+
+    // Determine the direction of each axis
+    const stepX: number = x0 < x1 ? 1 : -1;
+    const stepY: number = y0 < y1 ? 1 : -1;
+
+    // Initialize the error term
+    let error: number = deltaX - deltaY;
+
+    // Main loop: continue plotting until end point is reached
+    while (true) {
+        blitter.setPixel(x0, y0, color, clip, backbuffer);
+
+        // Exit condition: end of line reached
+        if (x0 === x1 && y0 === y1) break;
+
+        // Error is doubled to compare without using floats
+        const doubleError = 2 * error;
+
+        // Horizontal step
+        if (doubleError > -deltaY) {
+            error -= deltaY;
+            x0 += stepX;
+        }
+
+        // Vertical step
+        if (doubleError < deltaX) {
+            error += deltaX;
+            y0 += stepY;
+        }
+    }
+}
 
 /**
  * Draws a line between two points using the DDA (Digital Differential Analyzer) algorithm.
@@ -43,11 +102,11 @@ import { Point2D } from "../geometry/point2d.js";
  */
 export function drawLineDDA(blitter: Blitter, a: Point2D, b: Point2D, color: Color4, clip: boolean, backbuffer: Uint32Array): void {
     // Calculate differences in x and y
-    const dx: number = b.x - a.x;
-    const dy: number = b.y - a.y;
+    const deltaX: number = b.x - a.x;
+    const deltaY: number = b.y - a.y;
 
     // Determine the number of steps based on the axis with the greatest distance
-    const steps: number = Math.max(Math.abs(dx), Math.abs(dy));
+    const steps: number = Math.max(Math.abs(deltaX), Math.abs(deltaY));
 
     // If both points are the same, plot a single pixel
     if (steps === 0) {
@@ -56,8 +115,8 @@ export function drawLineDDA(blitter: Blitter, a: Point2D, b: Point2D, color: Col
     }
 
     // Compute the small delta added to x and y each step
-    const stepX: number = dx / steps;
-    const stepY: number = dy / steps;
+    const stepX: number = deltaX / steps;
+    const stepY: number = deltaY / steps;
 
     // Start at point a
     let x: number = a.x;
