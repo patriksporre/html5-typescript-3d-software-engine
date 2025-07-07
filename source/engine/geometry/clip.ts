@@ -47,13 +47,14 @@ export function clipLineLiangBarsky (a: Point2D, b: Point2D, clipping: Clipping)
     let tMin: number = 0;
     let tMax: number = 1;
 
-    // Clip to last valid pixel (inclusive) – canvas pixels are 0-indexed
-    // so maxX and maxY are exclusive bounds (e.g. width/height), and max - 1 is last visible pixel
     if (
         testEdge(-deltaX, a.x - clipping.minX) &&       // Left
-        testEdge(deltaX, (clipping.maxX - 1) - a.x) &&  // Right
         testEdge(-deltaY, a.y - clipping.minY) &&       // Top
-        testEdge(deltaY, (clipping.maxY - 1) - a.y)     // Bottom
+        
+        // Clip to last valid pixel (inclusive) – canvas pixels are 0-indexed
+        // so maxX and maxY are exclusive bounds (e.g. width/height), and max - 1 is last visible pixel
+        testEdge(deltaX, (clipping.maxX - 1) - a.x) &&  // Right
+        testEdge(deltaY, (clipping.maxY - 1) - a.y)     // Bottom 
     ) {
         return {
             a: new Point2D(a.x + tMin * deltaX, a.y + tMin * deltaY),
