@@ -1,0 +1,48 @@
+<!--
+    Project: html5-typescript-3d-software-engine
+    File: index.html
+    Author: Patrik Sporre
+    License: MIT
+
+    Description:
+      HTML entry point for demo 05-flat-scanline.
+
+      This file bootstraps the rendering engine by:
+        - Dynamically importing the compiled engine JavaScript (engine.js)
+        - Calling the engine's loader() function with:
+            1. The compiled demo module path
+            2. Desired canvas width (optional)
+            3. Desired canvas height (optional)
+
+      The engine handles:
+        - Canvas creation and insertion into the DOM
+        - Setting up the animation loop
+        - Passing control to the demo via initialize() and render()
+
+      Notes:
+        - Uses native ES6 module syntax (type="module")
+        - No external libraries – pure browser API
+        - Canvas is created dynamically; <body> remains empty
+        - Keep this file minimal and reusable for all demos
+-->
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>05-flat-scanline</title>
+        <script type="module">
+            // Import the engine loader from the compiled build
+            import { loader } from '../../../build/engine/engine.js';
+
+            // Start the demo by loading its compiled JavaScript module
+            loader('../../../build/demos/05-flat-scanline/demo.js');
+        </script>
+    </head>
+    <body>
+        <!--
+            The canvas is created and appended by the engine.
+            Nothing to declare in <body> – keep it clean.
+        -->
+    </body>
+</html>
