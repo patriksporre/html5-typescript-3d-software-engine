@@ -30,18 +30,23 @@ export class Point2D {
     }
 
     /**
-     * Returns a new point rotated around the origin by the given angle (in radians).
-     * 
-     * @param angle - Angle in radians (counterclockwise)
-     * @returns A new Point2D instance
+     * Rotates the point counter-clockwise around a pivot (default is origin).
+     *
+     * @param angle - Rotation angle in radians
+     * @param x - X-coordinate of pivot (default: 0)
+     * @param y - Y-coordinate of pivot (default: 0)
+     * @returns A new rotated Point2D
      */
-    public rotate(angle: number): Point2D {
+    public rotate(angle: number, x: number = 0, y: number = 0): Point2D {
         const cos: number = Math.cos(angle);
         const sin: number = Math.sin(angle);
 
+        const dx: number = this.x - x;
+        const dy: number = this.y - y;
+
         return new Point2D(
-            this.x * cos - this.y * sin,
-            this.x * sin + this.y * cos
+            x + dx * cos - dy * sin,
+            y + dx * sin + dy * cos
         );
     }
 

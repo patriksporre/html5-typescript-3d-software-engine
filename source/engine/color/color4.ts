@@ -116,7 +116,7 @@ export class Color4 {
      * Returns a human-readable string representation of the colour.
      */
     public toString(): string {
-        return `argb(${this.alpha}, ${this.red}, ${this.green}, ${this.blue})`;
+        return `Color4(${this.alpha}, ${this.red}, ${this.green}, ${this.blue})`;
     }
 
     // Predefined colours

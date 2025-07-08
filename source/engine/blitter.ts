@@ -22,10 +22,12 @@
 
 import { Clipping } from "./blitter/clipping.js";
 import { Color4 } from "./color/color4.js";
+import { Point2D } from "./geometry/point2d.js";
 
 import { getPixel, setPixel } from './blitter/pixel.js';
 import { drawLineBresenham, drawLineDDA } from "./blitter/line.js";
-import { Point2D } from "./geometry/point2d.js";
+import { fillFlatScanline } from "./rasteriser/flat-scanline.js";
+import { Triangle2D } from "./geometry/triangle2d.js";
 
 interface CanvasParameters {
     width: number,
@@ -192,5 +194,19 @@ export class Blitter {
      */
     public drawLineDDA(a: Point2D, b: Point2D, color: Color4, clip: boolean = false, backbuffer: Uint32Array = this.backbuffer32) : void {
         return drawLineDDA(this, a, b, color, clip, backbuffer);
+    }
+
+    /**
+     * Fills a 2D triangle using scanline rasterisation and solid flat shading.
+     * 
+     * This method wraps the global fillFlatScanline() function and passes the current Blitter instance.
+     * It assumes that the triangle is in screen space and does not perform clipping.
+     * 
+     * @param triangle - Triangle to rasterise (screen space)
+     * @param color - Fill colour (solid flat shading)
+     * @param backbuffer - Optional target buffer (default: this.backbuffer32)
+     */
+    public fillFlatScanline(triangle: Triangle2D, color: Color4, backbuffer: Uint32Array = this.backbuffer32): void {
+        return fillFlatScanline(this, triangle, color, backbuffer);
     }
 }

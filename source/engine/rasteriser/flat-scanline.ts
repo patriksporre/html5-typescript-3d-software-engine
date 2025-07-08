@@ -10,12 +10,15 @@
  *   forming the foundation for more advanced techniques (e.g. Gouraud, Phong, textured shading).
  * 
  *   The approach:
- *     - Sorts triangle vertices by Y to identify flat-top, flat-bottom, or general triangles
- *     - General triangles are split into two: one flat-top and one flat-bottom
- *     - Each triangle is filled horizontally (scanline by scanline) between interpolated left/right edges
+ *     - Sorts triangle vertices using rasterOrder()
+ *     - Identifies flat-top, flat-bottom, or general triangle
+ *     - General triangles are split at the middle Y into two sub-triangles
+ *     - Each triangle is filled using horizontal scanlines between interpolated left/right edges
  * 
- *   Notes:
- *     - Coordinates are snapped to integer pixels using Math.ceil for top-left fill convention
+ *   Optimisations:
+ *     - Writes directly to backbuffer with one multiplication per scanline
+ *     - Uses top-left fill convention (via Math.ceil) for raster consistency
+ *     - Slopes are computed once, only additions used per scanline
  */
 import { Blitter } from "../blitter.js";
 import { Color4 } from "../color/color4.js";
@@ -24,7 +27,7 @@ import { Triangle2D } from "../geometry/triangle2d.js";
 
 /**
  * Rasterises a filled triangle using horizontal scanlines and a flat colour.
- * Dispatches to either flat-top, flat-bottom, or both if needed.
+ * Handles flat-top, flat-bottom, or splits a general triangle into both.
  * 
  * @param blitter - The active Blitter instance 
  * @param triangle - Triangle to rasterise
@@ -36,13 +39,16 @@ export function fillFlatScanline(blitter: Blitter, triangle: Triangle2D, color: 
     const [v0, v1, v2] = triangle.rasterOrder();
 
     const width: number = blitter.width;
+    const height: number = blitter.height;
+
+    const colorUnpacked: number = color.toAABBGGRR();
 
     if (v1.y === v2.y) {
         // Case 1: Flat-bottom triangle (v1 and v2 share the same Y)
-        fillFlatBottom(width, v0, v1, v2, color, backbuffer);
+        fillFlatBottom(width, height, v0, v1, v2, colorUnpacked, backbuffer);
     } else if (v0.y === v1.y) {
         // Case 2: Flat-top triangle (v0 and v1 share the same Y)
-        filLFlatTop(width, v0, v1, v2, color, backbuffer);
+        fillFlatTop(width, height, v0, v1, v2, colorUnpacked, backbuffer);
     } else {
         // Case 3: General triangle – split into one flat-bottom and one flat-top
         const t: number = (v1.y - v0.y) / (v2.y - v0.y);
@@ -52,19 +58,26 @@ export function fillFlatScanline(blitter: Blitter, triangle: Triangle2D, color: 
             v1.y                        // shared Y with the middle vertex
         );
 
-        // Sort v1 and v3 left-to-right
+        // Determine left and right at the split
         const [left, right] = v1.x < v3.x ? [v1, v3] : [v3, v1];
 
-        fillFlatBottom(width, v0, left, right, color, backbuffer);
-        filLFlatTop(width, left, right, v2, color, backbuffer);
+        fillFlatBottom(width, height, v0, left, right, colorUnpacked, backbuffer);
+        fillFlatTop(width, height, left, right, v2, colorUnpacked, backbuffer);
     }
 }
 
 /**
- * Fills a flat-top triangle.
- * Assumes v0 and v1 are top vertices with equal y-coordinates, and v2 is the bottom vertex.
+ * Fills a flat-top triangle (two top vertices share Y, one bottom vertex).
+ * 
+ * @param width - Canvas width
+ * @param height - Canvas height
+ * @param v0 - Left-top vertex
+ * @param v1 - Right-top vertex
+ * @param v2 - Bottom vertex
+ * @param color - AABBGGRR
+ * @param backbuffer - Backbuffer to write pixels into
  */
-function filLFlatTop(width: number, v0: Point2D, v1: Point2D, v2: Point2D, color: Color4, backbuffer: Uint32Array): void {
+function fillFlatTop(width: number, height: number, v0: Point2D, v1: Point2D, v2: Point2D, color: number, backbuffer: Uint32Array): void {
     // Vertical span of each edge (for slope calculation)
     const dyLeft: number = v2.y - v0.y;
     const dyRight: number = v2.y - v1.y;
@@ -82,28 +95,21 @@ function filLFlatTop(width: number, v0: Point2D, v1: Point2D, v2: Point2D, color
     const yStart = Math.ceil(v0.y);
     const yEnd = Math.ceil(v2.y);
 
-    let position: number = yStart * width;
-    let c: number = color.toAABBGGRR();
-
-    for (let y: number = yStart; y < yEnd; y++) {
-        const xStart: number = Math.max(0, Math.ceil(xLeft));
-        const xEnd: number = Math.min(width, Math.ceil(xRight));
-
-        for (let x: number = xStart; x < xEnd; x++) {
-            backbuffer[position + x] = c;
-        }
-        position += width;
-
-        xLeft += slopeLeft;
-        xRight += slopeRight;
-    }
+    rasterScanlines(width, height, yStart, yEnd, v0.x, v1.x, slopeLeft, slopeRight, color, backbuffer); 
 }
 
 /**
- * Fills a flat-bottom triangle.
- * Assumes v0 is the top vertex, and v1 and v2 are bottom vertices with equal y-coordinates.
+ * Fills a flat-bottom triangle (one top vertex, two bottom vertices share Y).
+ * 
+ * @param width - Canvas width
+ * @param height - Canvas height
+ * @param v0 - Top vertex
+ * @param v1 - Left-bottom vertex
+ * @param v2 - Right-bottom vertex
+ * @param color - AABBGGRR
+ * @param backbuffer - Backbuffer to write pixels into
  */
-function fillFlatBottom(width: number, v0: Point2D, v1: Point2D, v2: Point2D, color: Color4, backbuffer: Uint32Array): void {
+function fillFlatBottom(width: number, height: number, v0: Point2D, v1: Point2D, v2: Point2D, color: number, backbuffer: Uint32Array): void {
     // Vertical span of each edge (for slope calculation)
     const dyLeft: number = v1.y - v0.y;
     const dyRight: number = v2.y - v0.y;
@@ -121,19 +127,38 @@ function fillFlatBottom(width: number, v0: Point2D, v1: Point2D, v2: Point2D, co
     const yStart: number = Math.ceil(v0.y);
     const yEnd: number = Math.ceil(v1.y);
 
-    let position: number = yStart * width;
-    let c: number = color.toAABBGGRR();
+    rasterScanlines(width, height, yStart, yEnd, v0.x, v0.x, slopeLeft, slopeRight, color, backbuffer); 
+}
 
-    for (let y: number = yStart; y < yEnd; y++) {
+/**
+ * Writes horizontal spans between xLeft and xRight for each scanline.
+ * 
+ * @param width - Width of the screen / canvas
+ * @param yStart - Starting Y coordinate (inclusive)
+ * @param yEnd - Ending Y coordinate (exclusive)
+ * @param xLeft - Initial X on the left edge
+ * @param xRight - Initial X on the right edge
+ * @param slopeLeft - Increment per Y step on the left edge
+ * @param slopeRight - Increment per Y step on the right edge
+ * @param color - AABBGGRR
+ * @param backbuffer - The 32-bit linear pixel buffer
+ */
+function rasterScanlines(width: number, height: number, yStart: number, yEnd: number, xLeft: number, xRight: number, slopeLeft: number, slopeRight: number, color: number, backbuffer: Uint32Array): void {
+    const clampedYStart: number = Math.max(0, yStart);
+    const clampedYEnd: number = Math.min(height, yEnd);
+    
+    let position: number = clampedYStart * width;
+
+    for (let y: number = clampedYStart; y < clampedYEnd; y++) {
         const xStart: number = Math.max(0, Math.ceil(xLeft));
         const xEnd: number = Math.min(width, Math.ceil(xRight));
 
         for (let x: number = xStart; x < xEnd; x++) {
-            backbuffer[position + x] = c;
+            backbuffer[position + x] = color;
         }
-        position += width;
 
+        position += width;
         xLeft += slopeLeft;
         xRight += slopeRight;
     }
-}
+ }
